@@ -1,0 +1,354 @@
+/* ─── Google Fonts ─────────────────────────────────────────── */
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:wght@300;400;500;600&display=swap");
+
+@import "tailwindcss";
+
+/* ─── Tailwind v4 Theme (CSS-first, no config file) ─────────── */
+@theme {
+  /* Fonts */
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-body:    "DM Sans", system-ui, sans-serif;
+
+  /* Custom color palette */
+  --color-cream-50:   #fdf8f4;
+  --color-cream-100:  #f9f0e8;
+  --color-cream-200:  #f2e3d0;
+  --color-blush-200:  #fce8ee;
+  --color-blush-400:  #f5b8cb;
+  --color-blush-500:  #ef8fac;
+
+  /* Rose is built into Tailwind — these extend it */
+  --color-rose-50:  #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-200: #fecdd3;
+  --color-rose-300: #fda4af;
+  --color-rose-400: #fb7185;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+}
+
+/* ─── Base ───────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-cream-50);
+  color: #1f2937;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Backgrounds ────────────────────────────────────────────── */
+.bg-hero {
+  background: linear-gradient(
+    135deg,
+    #fff1f2 0%,
+    #fdf8f4 40%,
+    #fce8ee 100%
+  );
+}
+
+.bg-section-alt {
+  background: linear-gradient(
+    180deg,
+    var(--color-cream-50) 0%,
+    #fce8ee 100%
+  );
+}
+
+/* ─── Buttons ────────────────────────────────────────────────── */
+.btn-primary {
+  display:          inline-flex;
+  align-items:      center;
+  justify-content:  center;
+  padding:          0.625rem 1.5rem;
+  background:       linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+  color:            #ffffff;
+  font-family:      var(--font-body);
+  font-size:        0.875rem;
+  font-weight:      500;
+  border-radius:    9999px;
+  border:           none;
+  cursor:           pointer;
+  transition:       transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  box-shadow:       0 4px 14px rgba(244, 63, 94, 0.35);
+  text-decoration:  none;
+  white-space:      nowrap;
+}
+
+.btn-primary:hover {
+  transform:  translateY(-2px);
+  box-shadow: 0 8px 20px rgba(244, 63, 94, 0.45);
+}
+
+.btn-primary:active {
+  transform:  translateY(0);
+  box-shadow: 0 4px 10px rgba(244, 63, 94, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity:   0.65;
+  transform: none;
+  cursor:    not-allowed;
+}
+
+.btn-outline {
+  display:          inline-flex;
+  align-items:      center;
+  justify-content:  center;
+  padding:          0.625rem 1.5rem;
+  background:       transparent;
+  color:            #f43f5e;
+  font-family:      var(--font-body);
+  font-size:        0.875rem;
+  font-weight:      500;
+  border-radius:    9999px;
+  border:           1.5px solid #fda4af;
+  cursor:           pointer;
+  transition:       all 0.2s ease;
+  text-decoration:  none;
+  white-space:      nowrap;
+}
+
+.btn-outline:hover {
+  background:       #fff1f2;
+  border-color:     #f43f5e;
+  transform:        translateY(-1px);
+  box-shadow:       0 4px 12px rgba(244, 63, 94, 0.15);
+}
+
+/* ─── Inputs ─────────────────────────────────────────────────── */
+.input-rose {
+  width:            100%;
+  padding:          0.625rem 0.875rem;
+  background:       #ffffff;
+  border:           1.5px solid #fecdd3;
+  border-radius:    0.75rem;
+  font-family:      var(--font-body);
+  font-size:        0.875rem;
+  color:            #1f2937;
+  outline:          none;
+  transition:       border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-rose::placeholder {
+  color: #9ca3af;
+}
+
+.input-rose:focus {
+  border-color: #f43f5e;
+  box-shadow:   0 0 0 3px rgba(244, 63, 94, 0.12);
+}
+
+/* ─── Glass Cards ────────────────────────────────────────────── */
+.glass {
+  background:    rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-rose {
+  background:    rgba(255, 241, 242, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* ─── Shadows ────────────────────────────────────────────────── */
+.shadow-rose-sm {
+  box-shadow: 0 2px 10px rgba(244, 63, 94, 0.15);
+}
+
+.shadow-rose-md {
+  box-shadow: 0 8px 25px rgba(244, 63, 94, 0.2);
+}
+
+.shadow-card-3d {
+  box-shadow:
+    0 2px 4px rgba(244, 63, 94, 0.04),
+    0 8px 20px rgba(244, 63, 94, 0.1),
+    0 20px 40px rgba(0, 0, 0, 0.06);
+}
+
+.shadow-float {
+  box-shadow:
+    0 10px 30px rgba(244, 63, 94, 0.2),
+    0 30px 60px rgba(0, 0, 0, 0.1);
+}
+
+/* ─── Decorative Orbs ────────────────────────────────────────── */
+.orb {
+  border-radius:  9999px;
+  filter:         blur(60px);
+  opacity:        0.4;
+  pointer-events: none;
+}
+
+.orb-rose {
+  background: radial-gradient(circle, #fda4af 0%, #f43f5e 100%);
+}
+
+.orb-pink {
+  background: radial-gradient(circle, #fce8ee 0%, #fda4af 100%);
+}
+
+.orb-cream {
+  background: radial-gradient(circle, #fdf8f4 0%, #fce8ee 100%);
+}
+
+/* ─── Text Gradient ──────────────────────────────────────────── */
+.text-gradient {
+  background:             linear-gradient(135deg, #f43f5e 0%, #e11d48 60%, #be185d 100%);
+  -webkit-background-clip: text;
+  background-clip:         text;
+  -webkit-text-fill-color: transparent;
+  color:                   transparent;
+}
+
+/* ─── Section Padding ────────────────────────────────────────── */
+.section-pad {
+  padding-top:    5rem;
+  padding-bottom: 5rem;
+}
+
+/* ─── Skeleton Loader ────────────────────────────────────────── */
+.skeleton {
+  background:          linear-gradient(90deg, #fce8ee 0%, #fdf8f4 50%, #fce8ee 100%);
+  background-size:     200% 100%;
+  animation:           skeleton-shimmer 1.4s ease infinite;
+  border-radius:       0.5rem;
+}
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Underline Animate ──────────────────────────────────────── */
+.underline-animate {
+  position:       relative;
+  text-decoration: none;
+}
+
+.underline-animate::after {
+  content:          "";
+  position:         absolute;
+  bottom:           -1px;
+  left:             0;
+  width:            0;
+  height:           1px;
+  background:       currentColor;
+  transition:       width 0.25s ease;
+}
+
+.underline-animate:hover::after {
+  width: 100%;
+}
+
+/* ─── Star Rating ────────────────────────────────────────────── */
+.star-filled {
+  color: #f59e0b;
+}
+
+/* ─── Page Enter Animation ───────────────────────────────────── */
+.page-enter {
+  animation: fade-in-page 0.3s ease forwards;
+}
+
+@keyframes fade-in-page {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Animations ─────────────────────────────────────────────── */
+
+/* Fade up on load */
+.animate-fade-up {
+  animation: fade-up 0.6s ease forwards;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Simple fade in */
+.animate-fade-in {
+  animation: fade-in 0.4s ease forwards;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Scale in (for modals, cards) */
+.animate-scale-in {
+  animation: scale-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Float animations (for orbs and hero card) */
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-fast {
+  animation: float 2.5s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-14px); }
+}
+
+/* Bounce soft */
+.animate-bounce-soft {
+  animation: bounce-soft 2s ease-in-out infinite;
+}
+
+@keyframes bounce-soft {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
+}
+
+/* Pulse soft */
+.animate-pulse-soft {
+  animation: pulse-soft 2.5s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.8; transform: scale(1.04); }
+}
+
+/* Rotate slow (for ring decorations) */
+.animate-rotate-slow {
+  animation: rotate-slow 12s linear infinite;
+}
+
+@keyframes rotate-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ─── Responsive Helpers ─────────────────────────────────────── */
+@media (max-width: 640px) {
+  .section-pad {
+    padding-top:    3rem;
+    padding-bottom: 3rem;
+  }
+}
