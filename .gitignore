@@ -1,0 +1,15 @@
+# Environment files - NEVER push these
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+front/.next/
+front/node_modules/
+backend/node_modules/
+
+# Build outputs
+front/out/
+front/build/
+.next/
