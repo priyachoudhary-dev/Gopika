@@ -34,10 +34,35 @@ app.get("/", (req, res) => {
 
 // ─── Global error handler ─────────────────────────────────────
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
+  console.error("Backend Error:", err);
+  
+  // Razorpay or other library errors might throw custom objects instead of standard Error
+  let message = "Internal Server Error";
+  let status = err.status || 500;
+
+  if (err instanceof Error) {
+    message = err.message;
+  } else if (typeof err === "object" && err !== null) {
+    if (err.error && err.error.description) {
+      message = `Payment Service Error: ${err.error.description}`;
+    } else if (err.description) {
+      message = `Payment Service Error: ${err.description}`;
+    } else if (err.message) {
+      message = err.message;
+    } else {
+      message = JSON.stringify(err);
+    }
+    if (err.statusCode) {
+      status = err.statusCode;
+    }
+  } else if (typeof err === "string") {
+    message = err;
+  }
+
+  res.status(status).json({
     success: false,
-    message: err.message || "Internal Server Error",
+    message,
+    stack: err instanceof Error ? err.stack : undefined,
   });
 });
 
