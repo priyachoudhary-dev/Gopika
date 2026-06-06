@@ -5,17 +5,6 @@ import { useCart }   from "@/context/CartContext";
 import { useAuth }   from "@/context/AuthContext";
 import api           from "@/lib/axios";
 
-// ── Load Razorpay script dynamically ────────────────────────
-const loadRazorpay = () =>
-  new Promise((resolve) => {
-    if (window.Razorpay) return resolve(true);
-    const script   = document.createElement("script");
-    script.src     = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload  = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-
 export default function CheckoutPage() {
   const { cartItems, cartTotal, clearCart } = useCart();
   const { user, isLoggedIn }                = useAuth();
@@ -24,7 +13,7 @@ export default function CheckoutPage() {
   const [paying, setPaying] = useState(false);
   const [orderId, setOrderId] = useState(null);
 
-  const shipping   = cartTotal >= 500 ? 0 : 60;
+  const shipping   = cartTotal >= 500 ? 0 : 50; // free shipping above ₹500, else ₹50
   const grandTotal = cartTotal + shipping;
 
   const [address, setAddress] = useState({
@@ -64,82 +53,21 @@ export default function CheckoutPage() {
     if (validateAddress()) setStep(2);
   };
 
-  // ── Razorpay payment flow ────────────────────────────────
+  // ── Stripe checkout flow ─────────────────────────────────
   const handlePayment = async () => {
     setPaying(true);
     try {
-      // Step 1: Load Razorpay checkout script
-      const loaded = await loadRazorpay();
-      if (!loaded) throw new Error("Razorpay failed to load. Check your internet.");
-
-      // Step 2: Create order on our backend (gets Razorpay order ID)
-      const { data: rzpOrder } = await api.post("/payment/create-order", {
-        amount: grandTotal,
+      const { data } = await api.post("/payment/create-checkout-session", {
+        shippingAddress: address,
       });
 
-      // Step 3: Open Razorpay popup
-      const options = {
-        key:         process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount:      rzpOrder.amount,
-        currency:    rzpOrder.currency,
-        name:        "Gopika",
-        description: "Soulful Style, Divine Roots",
-        order_id:    rzpOrder.orderId,
-        prefill: {
-          name:    address.fullName,
-          contact: address.phone,
-          email:   user?.email || "",
-        },
-        theme: { color: "#f43f5e" },
-
-        // ── Called on successful payment ──────────────────
-        handler: async (response) => {
-          try {
-            // Step 4: Verify signature on our backend
-            await api.post("/payment/verify", {
-              razorpay_order_id:   response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature:  response.razorpay_signature,
-            });
-
-            // Step 5: Save order to our DB
-            const orderItems = cartItems.map((item) => ({
-              product:  item.product._id,
-              name:     item.product.name,
-              image:    item.product.images?.[0]?.url || "",
-              price:    item.price,
-              size:     item.size,
-              quantity: item.quantity,
-            }));
-
-            const { data } = await api.post("/orders", {
-              orderItems,
-              shippingAddress:   address,
-              itemsPrice:        cartTotal,
-              shippingPrice:     shipping,
-              taxPrice:          0,
-              totalPrice:        grandTotal,
-              razorpayOrderId:   response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-            });
-
-            setOrderId(data.order._id);
-            await clearCart();
-            setStep(3); // show success screen
-          } catch (err) {
-            alert("Payment verified but order saving failed. Contact support.");
-          }
-        },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.on("payment.failed", (response) => {
-        alert(`Payment failed: ${response.error.description}`);
-      });
-      rzp.open();
+      if (data.url) {
+        window.location.href = data.url; // Redirect directly to Stripe Checkout hosted page
+      } else {
+        throw new Error("Could not initialize Stripe Session");
+      }
     } catch (err) {
-      alert(err.message || "Payment initiation failed");
+      alert(err.response?.data?.message || err.message || "Payment initiation failed");
     } finally {
       setPaying(false);
     }
