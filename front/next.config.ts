@@ -10,13 +10,25 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        // Cloudinary — where all product images are uploaded to
+        // Cloudinary — production image host
         protocol: "https",
         hostname: "res.cloudinary.com",
         pathname: "/**",
       },
       {
-        // Allow any https image (useful during development)
+        // Picsum Photos — reliable seed-based placeholder images
+        protocol: "https",
+        hostname: "picsum.photos",
+        pathname: "/**",
+      },
+      {
+        // Unsplash — high quality stock photos
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
+      },
+      {
+        // Fallback: allow any https image during development
         protocol: "https",
         hostname: "**",
       },
