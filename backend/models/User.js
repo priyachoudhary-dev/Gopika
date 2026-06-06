@@ -52,15 +52,14 @@ const userSchema = new mongoose.Schema(
 );
 
 // ─── Hash password BEFORE saving to database ──────────────────
+// Mongoose v7+ async middleware: do NOT use next() — just return.
 // This runs automatically every time a user is saved.
 // We NEVER store plain text passwords — always hashed.
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", async function () {
   // Only hash if password was changed (avoids re-hashing on profile update)
-  if (!this.isModified("password")) return next();
-
+  if (!this.isModified("password")) return;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
 // ─── Method to compare password on login ─────────────────────
