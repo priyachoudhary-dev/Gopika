@@ -37,8 +37,8 @@ app.use((err, req, res, next) => {
   console.error("Backend Error:", err);
   
   // Razorpay or other library errors might throw custom objects instead of standard Error
+  let status = err.status || (res.statusCode !== 200 ? res.statusCode : 500);
   let message = "Internal Server Error";
-  let status = err.status || 500;
 
   if (err instanceof Error) {
     message = err.message;
