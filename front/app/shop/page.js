@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import api from "@/lib/axios";
 import ProductCard from "@/components/ProductCard";
@@ -13,7 +13,7 @@ const SORT_OPTIONS = [
   { value: "popular",    label: "Most Popular"     },
 ];
 
-export default function ShopPage() {
+function ShopContent() {
   const searchParams = useSearchParams();
   const router       = useRouter();
 
@@ -262,8 +262,32 @@ export default function ShopPage() {
               </button>
             </div>
           )}
-        </div>
       </div>
     </div>
+  );
+}
+
+export default function ShopPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-cream-50 pt-24 pb-16 px-4">
+        <div className="max-w-7xl mx-auto space-y-4">
+          <div className="skeleton h-12 w-48 rounded-2xl" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-5">
+            {Array(8).fill(0).map((_, i) => (
+              <div key={i} className="rounded-3xl overflow-hidden">
+                <div className="skeleton aspect-[3/4]" />
+                <div className="p-4 space-y-2 bg-white">
+                  <div className="skeleton h-3 w-3/4 rounded" />
+                  <div className="skeleton h-4 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    }>
+      <ShopContent />
+    </Suspense>
   );
 }
