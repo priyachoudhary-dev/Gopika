@@ -35,14 +35,16 @@ const orderSchema = new mongoose.Schema(
     taxPrice: { type: Number, default: 0 },
     totalPrice: { type: Number, required: true },
 
-    // Razorpay payment details
+    // Razorpay / Stripe payment details
     paymentMethod: {
       type: String,
-      default: "Razorpay",
+      default: "Stripe",
     },
     razorpayOrderId: { type: String }, // ID from Razorpay when order created
     razorpayPaymentId: { type: String }, // ID after successful payment
     razorpaySignature: { type: String }, // for verifying payment authenticity
+    stripeSessionId: { type: String }, // ID from Stripe Checkout
+    stripePaymentIntentId: { type: String }, // ID from Stripe after payment is completed
 
     isPaid: { type: Boolean, default: false },
     paidAt: { type: Date },
