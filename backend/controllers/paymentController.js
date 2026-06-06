@@ -1,7 +1,17 @@
 const asyncHandler = require("express-async-handler");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const Cart = require("../models/Cart");
 const Order = require("../models/Order");
+
+let stripeInstance;
+const getStripe = () => {
+  if (!stripeInstance) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("STRIPE_SECRET_KEY is missing from environment variables");
+    }
+    stripeInstance = require("stripe")(process.env.STRIPE_SECRET_KEY);
+  }
+  return stripeInstance;
+};
 
 // ─── @route   POST /api/payment/create-checkout-session ───────
 // @desc    Create a Stripe Checkout Session
@@ -70,7 +80,7 @@ const createStripeSession = asyncHandler(async (req, res) => {
   }
 
   // 3. Create Stripe checkout session
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     payment_method_types: ["card"],
     mode: "payment",
     line_items: lineItems,
@@ -104,7 +114,7 @@ const confirmStripePayment = asyncHandler(async (req, res) => {
   }
 
   // 1. Retrieve Checkout Session from Stripe
-  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  const session = await getStripe().checkout.sessions.retrieve(sessionId);
   if (!session) {
     res.status(404);
     throw new Error("Stripe session not found");
