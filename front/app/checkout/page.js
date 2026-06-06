@@ -277,10 +277,10 @@ export default function CheckoutPage() {
                   className="btn-primary w-full py-4 text-base disabled:opacity-70">
                   {paying
                     ? "Opening Payment..."
-                    : `Pay ₹${grandTotal.toLocaleString("en-IN")} via Razorpay 🔒`}
+                    : `Pay ₹${grandTotal.toLocaleString("en-IN")} via Stripe 🔒`}
                 </button>
                 <p className="text-center text-xs text-gray-400">
-                  Secured by Razorpay • 256-bit SSL encrypted
+                  Secured by Stripe • 256-bit SSL encrypted
                 </p>
               </div>
             )}
