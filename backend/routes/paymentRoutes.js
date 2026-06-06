@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const {
-  createRazorpayOrder,
-  verifyPayment,
+  createStripeSession,
+  confirmStripePayment,
 } = require("../controllers/paymentController");
 const { protect } = require("../middleware/authMiddleware");
 
-// Both payment routes require login
-router.post("/create-order", protect, createRazorpayOrder);
-router.post("/verify",       protect, verifyPayment);
+// Stripe payment routes
+router.post("/create-checkout-session", protect, createStripeSession);
+router.post("/confirm-payment",          protect, confirmStripePayment);
 
 module.exports = router;

@@ -1,73 +1,187 @@
 const asyncHandler = require("express-async-handler");
-const Razorpay = require("razorpay");
-const crypto = require("crypto"); // built-in Node module, no install needed
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const Cart = require("../models/Cart");
+const Order = require("../models/Order");
 
-// ─── Initialize Razorpay with your keys ───────────────────────
-const razorpay = new Razorpay({
-  key_id:     process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
-
-// ─── @route   POST /api/payment/create-order ──────────────────
-// @desc    Create a Razorpay order (step 1 of payment flow)
+// ─── @route   POST /api/payment/create-checkout-session ───────
+// @desc    Create a Stripe Checkout Session
 // @access  Private
-//
-// HOW RAZORPAY PAYMENT WORKS (3 steps):
-// 1. Backend creates a Razorpay "order" → gets an order_id
-// 2. Frontend opens Razorpay payment popup with that order_id
-// 3. After user pays, backend verifies the payment signature
-//    and then saves the order to our DB
+const createStripeSession = asyncHandler(async (req, res) => {
+  const { shippingAddress } = req.body;
 
-const createRazorpayOrder = asyncHandler(async (req, res) => {
-  const { amount, currency = "INR" } = req.body;
+  if (!shippingAddress) {
+    res.status(400);
+    throw new Error("Shipping address is required");
+  }
 
-  // amount must be in paise (₹1 = 100 paise)
-  const options = {
-    amount:   Math.round(amount * 100),
-    currency,
-    receipt:  `receipt_${Date.now()}`,
-  };
+  // 1. Fetch user's cart from database
+  const cart = await Cart.findOne({ user: req.user._id }).populate("items.product");
+  if (!cart || cart.items.length === 0) {
+    res.status(400);
+    throw new Error("Your cart is empty");
+  }
 
-  const order = await razorpay.orders.create(options);
+  // 2. Map cart items to Stripe line items structure
+  const lineItems = cart.items.map((item) => {
+    const hasDiscount = item.product.discountedPrice > 0;
+    const displayPrice = hasDiscount ? item.product.discountedPrice : item.product.price;
+    const imageUrl = item.product.images && item.product.images.length > 0 
+      ? item.product.images[0].url 
+      : "";
+
+    return {
+      price_data: {
+        currency: "inr",
+        product_data: {
+          name: item.product.name,
+          images: imageUrl ? [imageUrl] : [],
+          metadata: {
+            productId: item.product._id.toString(),
+            size: item.size,
+          },
+        },
+        unit_amount: Math.round(displayPrice * 100), // Stripe expects amount in paise (cents equivalent)
+      },
+      quantity: item.quantity,
+    };
+  });
+
+  // Calculate prices for breakdown
+  const itemsPrice = cart.items.reduce((total, item) => {
+    const price = item.product.discountedPrice > 0 ? item.product.discountedPrice : item.product.price;
+    return total + price * item.quantity;
+  }, 0);
+  const shippingPrice = itemsPrice > 500 ? 0 : 50; // free shipping above ₹500, else ₹50
+  const totalPrice = itemsPrice + shippingPrice;
+
+  // Add shipping fee as a line item if applicable
+  if (shippingPrice > 0) {
+    lineItems.push({
+      price_data: {
+        currency: "inr",
+        product_data: {
+          name: "Shipping Fee",
+          description: "Delivery charges for orders below ₹500",
+        },
+        unit_amount: Math.round(shippingPrice * 100),
+      },
+      quantity: 1,
+    });
+  }
+
+  // 3. Create Stripe checkout session
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    mode: "payment",
+    line_items: lineItems,
+    success_url: `${process.env.FRONTEND_URL || "http://localhost:3000"}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.FRONTEND_URL || "http://localhost:3000"}/checkout/cancel`,
+    metadata: {
+      userId: req.user._id.toString(),
+      shippingAddress: JSON.stringify(shippingAddress),
+      itemsPrice: String(itemsPrice),
+      shippingPrice: String(shippingPrice),
+      totalPrice: String(totalPrice),
+    },
+  });
 
   res.json({
     success: true,
-    orderId: order.id,       // send to frontend to open payment popup
-    amount:  order.amount,
-    currency: order.currency,
+    url: session.url,
+    sessionId: session.id,
   });
 });
 
-// ─── @route   POST /api/payment/verify ────────────────────────
-// @desc    Verify payment signature after user pays (step 3)
+// ─── @route   POST /api/payment/confirm-payment ────────────────
+// @desc    Verify Stripe payment success and create the order document
 // @access  Private
-//
-// WHY VERIFY? Razorpay sends back a signature made from:
-//   HMAC-SHA256(razorpay_order_id + "|" + razorpay_payment_id, key_secret)
-// We re-create that signature and compare. If they match → payment is genuine.
-// This prevents fake payment confirmation requests.
+const confirmStripePayment = asyncHandler(async (req, res) => {
+  const { sessionId } = req.body;
 
-const verifyPayment = asyncHandler(async (req, res) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-
-  // Re-create the expected signature using our secret
-  const expectedSignature = crypto
-    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-    .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-    .digest("hex");
-
-  if (expectedSignature === razorpay_signature) {
-    res.json({
-      success:    true,
-      message:    "Payment verified successfully",
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-    });
-  } else {
+  if (!sessionId) {
     res.status(400);
-    throw new Error("Payment verification failed — invalid signature");
+    throw new Error("Session ID is required");
   }
+
+  // 1. Retrieve Checkout Session from Stripe
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  if (!session) {
+    res.status(404);
+    throw new Error("Stripe session not found");
+  }
+
+  // Verify payment status
+  if (session.payment_status !== "paid") {
+    res.status(400);
+    throw new Error("Payment has not been completed");
+  }
+
+  // 2. Prevent duplicate order creation if page is refreshed
+  const existingOrder = await Order.findOne({ stripeSessionId: sessionId });
+  if (existingOrder) {
+    return res.json({
+      success: true,
+      message: "Order already processed",
+      order: existingOrder,
+    });
+  }
+
+  // 3. Extract order details from session metadata
+  const userId = session.metadata.userId;
+  const shippingAddress = JSON.parse(session.metadata.shippingAddress);
+  const itemsPrice = parseFloat(session.metadata.itemsPrice);
+  const shippingPrice = parseFloat(session.metadata.shippingPrice);
+  const totalPrice = parseFloat(session.metadata.totalPrice);
+
+  // 4. Fetch the user's cart to retrieve exact order items
+  const cart = await Cart.findOne({ user: userId }).populate("items.product");
+  if (!cart || cart.items.length === 0) {
+    res.status(400);
+    throw new Error("Cart is empty, cannot create order");
+  }
+
+  const orderItems = cart.items.map((item) => {
+    const hasDiscount = item.product.discountedPrice > 0;
+    const price = hasDiscount ? item.product.discountedPrice : item.product.price;
+    const imageUrl = item.product.images && item.product.images.length > 0 
+      ? item.product.images[0].url 
+      : "";
+
+    return {
+      product: item.product._id,
+      name: item.product.name,
+      image: imageUrl,
+      price,
+      size: item.size,
+      quantity: item.quantity,
+    };
+  });
+
+  // 5. Create new Order in DB
+  const order = await Order.create({
+    user: userId,
+    orderItems,
+    shippingAddress,
+    itemsPrice,
+    shippingPrice,
+    totalPrice,
+    paymentMethod: "Stripe",
+    stripeSessionId: sessionId,
+    stripePaymentIntentId: session.payment_intent,
+    isPaid: true,
+    paidAt: new Date(),
+    orderStatus: "Processing", // Mark as Processing right away since payment succeeded
+  });
+
+  // 6. Clear user's cart in DB
+  cart.items = [];
+  await cart.save();
+
+  res.json({
+    success: true,
+    message: "Order placed successfully!",
+    order,
+  });
 });
 
-module.exports = { createRazorpayOrder, verifyPayment };
+module.exports = { createStripeSession, confirmStripePayment };
